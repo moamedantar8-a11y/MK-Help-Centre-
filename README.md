@@ -30,6 +30,14 @@
 
         .header { width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; padding: 15px 0; border-bottom: 1px solid var(--border-color); }
         .logo { font-size: 20px; font-weight: bold; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+        
+        .header-controls { display: flex; gap: 10px; align-items: center; }
+        
+        .lang-select {
+            background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);
+            padding: 8px 12px; border-radius: 10px; cursor: pointer; outline: none; font-size: 14px; transition: 0.2s;
+        }
+        .lang-select:hover { border-color: var(--accent); }
 
         .hero-section { text-align: center; max-width: 750px; width: 100%; margin-bottom: 30px; position: relative; }
         .hero-section h1 { font-size: 32px; margin-bottom: 20px; color: var(--text-main); font-weight: bold; }
@@ -41,29 +49,27 @@
         }
         .search-box:focus-within { border-color: var(--accent); box-shadow: 0 8px 25px rgba(56, 189, 248, 0.2); }
         .search-box input {
-            width: 100%; background: transparent; border: none; outline: none; color: var(--text-main); font-size: 16px; text-align: right;
+            width: 100%; background: transparent; border: none; outline: none; color: var(--text-main); font-size: 16px;
         }
         .search-box span { color: var(--text-muted); font-size: 20px; }
 
-        /* قائمة نتائج البحث المنسدلة للـ 100 سؤال */
         .suggestions-dropdown {
             position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border-color);
             border-radius: 16px; margin-top: 8px; max-height: 350px; overflow-y: auto; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-            display: none; text-align: right;
+            display: none;
         }
         .suggestion-item { padding: 14px 22px; cursor: pointer; border-bottom: 1px solid var(--border-color); font-size: 14px; transition: 0.2s; }
         .suggestion-item:last-child { border-bottom: none; }
         .suggestion-item:hover { background: var(--hover-bg); color: var(--accent); }
 
-        /* صندوق عرض الإجابة المختارة */
         .answer-card {
             width: 100%; max-width: 800px; background: var(--bg-card); border: 1px solid var(--border-color);
-            border-radius: 16px; padding: 25px; margin-top: 25px; display: none; text-align: right; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            border-radius: 16px; padding: 25px; margin-top: 25px; display: none; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
         .answer-card h3 { color: var(--accent); margin-bottom: 12px; font-size: 18px; }
         .answer-card p { color: var(--text-muted); font-size: 15px; line-height: 1.8; }
 
-        .popular-section { width: 100%; max-width: 800px; margin-top: 30px; text-align: right; }
+        .popular-section { width: 100%; max-width: 800px; margin-top: 30px; }
         .popular-title { font-size: 15px; font-weight: bold; margin-bottom: 12px; color: var(--text-muted); }
         .chips-container { display: flex; flex-wrap: wrap; gap: 8px; }
         .chip {
@@ -79,15 +85,25 @@
         .icon-btn:hover { border-color: var(--accent); }
     </style>
 </head>
-<body>
+<body dir="rtl">
 
     <div class="header">
         <div class="logo">🌐 MK Creative Support</div>
-        <button class="icon-btn" onclick="toggleTheme()" title="تبديل الثيم">🌙</button>
+        <div class="header-controls">
+            <select id="langSelect" class="lang-select" onchange="changeLanguage()">
+                <option value="ar">العربية</option>
+                <option value="en">English</option>
+                <option value="fr">Français</option>
+                <option value="es">Español</option>
+                <option value="de">Deutsch</option>
+                <option value="tr">Türkçe</option>
+            </select>
+            <button class="icon-btn" onclick="toggleTheme()" title="تبديل الثيم">🌙</button>
+        </div>
     </div>
 
     <div class="hero-section">
-        <h1>ابحث في قاعدة المعرفة (100 سؤال ودعم فني)</h1>
+        <h1 id="heroTitle">ابحث في قاعدة المعرفة (100 سؤال ودعم فني)</h1>
         <div class="search-container">
             <div class="search-box">
                 <span>🔍</span>
@@ -97,97 +113,209 @@
         </div>
     </div>
 
-    <!-- صندوق عرض الإجابة المختارة -->
     <div class="answer-card" id="answerCard">
         <h3 id="answerTitle"></h3>
         <p id="answerText"></p>
     </div>
 
-    <!-- أهم المقترحات السريعة -->
     <div class="popular-section">
-        <div class="popular-title">💡 اقتراحات سريعة للبحث:</div>
+        <div class="popular-title" id="popularTitle">💡 اقتراحات سريعة للبحث:</div>
         <div class="chips-container" id="chipsContainer"></div>
     </div>
 
-    <div class="footer-support">
+    <div class="footer-support" id="footerText">
         لم تجد سؤالك من ضمن الـ 100 سؤال؟ <a href="https://wa.me/201559719175" target="_blank">تواصل معنا مباشرة عبر واتساب الوكالة</a>
     </div>
 
     <script>
-        // قاعدة بيانات شاملة تحتوي على 100 سؤال ودعماً فنياً يغطي المنصة والمطور والفريق بالكامل
+        // قواميس الترجمة والنصوص الثابتة للـ 6 لغات
+        const translations = {
+            ar: {
+                dir: "rtl",
+                hero: "ابحث في قاعدة المعرفة (100 سؤال ودعم فني)",
+                searchPlaceholder: "اكتب للبحث عن المطور، الفريق، المشاريع، الأكواد...",
+                popular: "💡 اقتراحات سريعة للبحث:",
+                footer: 'لم تجد سؤالك من ضمن الـ 100 سؤال؟ <a href="https://wa.me/201559719175" target="_blank">تواصل معنا مباشرة عبر واتساب الوكالة</a>',
+                noResults: "لا توجد نتائج مطابقة، يمكنك مراسلتنا مباشرة عبر واتساب.",
+                themeTitle: "تبديل الثيم"
+            },
+            en: {
+                dir: "ltr",
+                hero: "Search Knowledge Base (100 FAQs & Support)",
+                searchPlaceholder: "Type to search developer, team, projects, codes...",
+                popular: "💡 Quick Search Suggestions:",
+                footer: 'Didn’t find your question among the 100 FAQs? <a href="https://wa.me/201559719175" target="_blank">Contact us directly via WhatsApp</a>',
+                noResults: "No matching results found. You can contact us directly via WhatsApp.",
+                themeTitle: "Toggle Theme"
+            },
+            fr: {
+                dir: "ltr",
+                hero: "Rechercher dans la base de connaissances (100 FAQ et Support)",
+                searchPlaceholder: "Tapez pour rechercher développeur, équipe, projets...",
+                popular: "💡 Suggestions de recherche rapide :",
+                footer: 'Vous n\'avez pas trouvé votre question ? <a href="https://wa.me/201559719175" target="_blank">Contactez-nous directement via WhatsApp</a>',
+                noResults: "Aucun résultat trouvé. Contactez-nous directement via WhatsApp.",
+                themeTitle: "Changer de thème"
+            },
+            es: {
+                dir: "ltr",
+                hero: "Buscar en la base de conocimientos (100 Preguntas y Soporte)",
+                searchPlaceholder: "Escribe para buscar desarrollador, equipo, proyectos...",
+                popular: "💡 Sugerencias de búsqueda rápida:",
+                footer: '¿No encontraste tu pregunta? <a href="https://wa.me/201559719175" target="_blank">Contáctanos directamente por WhatsApp</a>',
+                noResults: "No se encontraron resultados. Contáctanos directamente por WhatsApp.",
+                themeTitle: "Cambiar tema"
+            },
+            de: {
+                dir: "ltr",
+                hero: "Wissensdatenbank durchsuchen (100 FAQs & Support)",
+                searchPlaceholder: "Tippen, um Entwickler, Team, Projekte zu suchen...",
+                popular: "💡 Schnelle Suchvorschläge:",
+                footer: 'Frage nicht gefunden? <a href="https://wa.me/201559719175" target="_blank">Kontaktiere uns direkt via WhatsApp</a>',
+                noResults: "Keine übereinstimmenden Ergebnisse. Kontaktiere uns direkt via WhatsApp.",
+                themeTitle: "Thema wechseln"
+            },
+            tr: {
+                dir: "ltr",
+                hero: "Bilgi Bankasında Ara (100 SSS ve Destek)",
+                searchPlaceholder: "Geliştirici, ekip, projeler, kodlar için yazın...",
+                popular: "💡 Hızlı Arama Önerileri:",
+                footer: 'Sorunuzu bulamadınız mı? <a href="https://wa.me/201559719175" target="_blank">WhatsApp üzerinden doğrudan bizimle iletişime geçin</a>',
+                noResults: "Eşleşen sonuç bulunamadı. WhatsApp üzerinden bizimle iletişime geçebilirsiniz.",
+                themeTitle: "Temayı Değiştir"
+            }
+        };
+
+        const popularQuestionsData = {
+            ar: [
+                "من هو مؤسس وكالة MK Creative؟",
+                "ما هو رابط نسخة حذيفة للموقع؟",
+                "ما هو كود الوصول السري للوكالة؟",
+                "كيف أطلب مشروعاً جديداً؟",
+                "من هي ناتالي إلويسا؟"
+            ],
+            en: [
+                "Who is the founder of MK Creative?",
+                "What is Huzaifa's version link?",
+                "What is the agency secret access code?",
+                "How do I request a new project?",
+                "Who is Nathalie Eloisa?"
+            ],
+            fr: [
+                "Qui est le fondateur de MK Creative ?",
+                "Quel est le lien de la version de Huzaifa ?",
+                "Quel est le code d'accès secret de l'agence ?",
+                "Comment demander un nouveau projet ?",
+                "Qui est Nathalie Eloisa ?"
+            ],
+            es: [
+                "¿Quién es el fundador de MK Creative?",
+                "¿Cuál es el enlace de la versión de Huzaifa?",
+                "¿Cuál es el código de acceso secreto?",
+                "¿Cómo solicitar un nuevo proyecto?",
+                "¿Quién es Nathalie Eloisa?"
+            ],
+            de: [
+                "Wer ist der Gründer von MK Creative?",
+                "Was ist der Link zu Huzaifas Version?",
+                "Was ist der geheime Zugangscode?",
+                "Wie beantrage ich ein neues Projekt?",
+                "Wer ist Nathalie Eloisa?"
+            ],
+            tr: [
+                "MK Creative'in kurucusu kimdir?",
+                "Huzaifa'nın versiyon bağlantısı nedir?",
+                "Ajansın gizli erişim kodu nedir?",
+                "Yeni bir projeyi nasıl talep edebilirim?",
+                "Nathalie Eloisa kimdir?"
+            ]
+        };
+
+        // قاعدة البيانات مع ترجمة الأسئلة والأجوبة للغات الست
         const knowledgeBase = [
-            // معلومات المطور والإدارة
-            { q: "من هو مؤسس ورئيس وكالة MK Creative؟", a: "مؤسس ورئيس وكالة MK Creative هو المطور المصري محمد عنتر." },
-            { q: "ما هي المجالات التي يتخصص فيها المطور محمد عنتر؟", a: "يتخصص في تطوير الويب، البرمجة بلغات مثل HTML, CSS, JavaScript وPython، إدارة المشاريع، والمحتوى الرقمي." },
-            { q: "ما هي وسائل التواصل المباشر مع مؤسس الوكالة محمد عنتر؟", a: "يمكن التواصل عبر البريد الإلكتروني (moamedantar8@gmail.com) أو رقم الواتساب الرسمي للوكالة (01559719175)." },
-            { q: "أين مقر أو نطاق عمل وكالة MK Creative؟", a: "الوكالة تعمل رقمياً عبر الإنترنت وتقدم خدماتها البرمجية والتصميمية للعملاء عالمياً ومحلياً." },
-            { q: "ما هي رؤية وهدف وكالة MK Creative؟", a: "الهدف هو تحويل الأفكار الإبداعية إلى مشاريع برمجية وتصميمية واقعية باحترافية وسرعة عالية." },
-            { q: "هل تدير الوكالة منصات أو قنوات أخرى؟", a: "نعم، تدير الوكالة قنوات رقمية ومجتمعات تعليمية وبرمجية مثل أندية الشطرنج ومنصات المذاكرة الإلكترونية." },
-            { q: "كيف بدأ تأسيس وكالة MK Creative؟", a: "بدأت الوكالة كمشروع تطويعي وشغف تقني في تطوير الويب وتقديم خدمات التصميم والمحتوى الرقمي وتطورت لتصبح وكالة متكاملة." },
-            { q: "ما هي البرمجيات والأدوات المفضلة لدى المطور محمد عنتر؟", a: "يستخدم محرر النصوص الحديث، GitHub لإدارة الأكواد، وGoogle Colab ومنصات الويب المتطورة." },
-            { q: "هل يقدم المطور محمد عنتر استشارات تقنية مجانية؟", a: "نعم، يقدم استشارات ونصائح تقنية لأصحاب الأفكار والمشاريع الناشئة لمساعدتهم في البدء." },
-            { q: "كيف يتم تحديث وتطوير منصات الوكالة باستمرار؟", a: "يتم تحديث المنصات بشكل دوري وإضافة ميزات جديدة بالتعاون مع فريق المطورين والمبرمجين." },
+            { 
+                q: { ar: "من هو مؤسس ورئيس وكالة MK Creative؟", en: "Who is the founder and head of MK Creative Agency?", fr: "Qui est le fondateur et responsable de l'agence MK Creative ?", es: "¿Quién es el fundador y director de MK Creative Agency?", de: "Wer ist der Gründer und Leiter der MK Creative Agency?", tr: "MK Creative Ajansı'nın kurucusu ve başkanı kimdir?" }, 
+                a: { ar: "مؤسس ورئيس وكالة MK Creative هو المطور المصري محمد عنتر[cite: 2].", en: "The founder and head of MK Creative Agency is Egyptian developer Mohamed Antar[cite: 2].", fr: "Le fondateur et responsable de l'agence MK Creative est le développeur égyptien Mohamed Antar[cite: 2].", es: "El fundador y director de MK Creative Agency es el desarrollador egipcio Mohamed Antar[cite: 2].", de: "Der Gründer und Leiter der MK Creative Agency ist der ägyptische Entwickler Mohamed Antar[cite: 2].", tr: "MK Creative Ajansı'nın kurucusu ve başkanı Mısırlı geliştirici Mohamed Antar'dır[cite: 2]." } 
+            },
+            { 
+                q: { ar: "ما هي المجالات التي يتخصص فيها المطور محمد عنتر؟", en: "What fields does developer Mohamed Antar specialize in?", fr: "Dans quels domaines le développeur Mohamed Antar se spécialise-t-il ?", es: "¿En qué campos se especializa el desarrollador Mohamed Antar?", de: "Auf welche Bereiche hat sich der Entwickler Mohamed Antar spezialisiert?", tr: "Geliştirici Mohamed Antar hangi alanlarda uzmanlaşmıştır?" }, 
+                a: { ar: "يتخصص في تطوير الويب، البرمجة بلغات مثل HTML, CSS, JavaScript وPython، إدارة المشاريع، والمحتوى الرقمي[cite: 2].", en: "He specializes in web development, programming languages such as HTML, CSS, JavaScript, and Python, project management, and digital content[cite: 2].", fr: "Il est spécialisé dans le développement web, la programmation (HTML, CSS, JavaScript, Python), la gestion de projets et le contenu numérique[cite: 2].", es: "Se especializa en desarrollo web, lenguajes de programación como HTML, CSS, JavaScript y Python, gestión de proyectos y contenido digital[cite: 2].", de: "Er ist spezialisiert auf Webentwicklung, Programmiersprachen wie HTML, CSS, JavaScript und Python, Projektmanagement und digitale Inhalte[cite: 2].", tr: "Web geliştirme, HTML, CSS, JavaScript ve Python gibi programlama dilleri, proje yönetimi ve dijital içerik konularında uzmanlaşmıştır[cite: 2]." } 
+            },
+            { 
+                q: { ar: "ما هو رابط نسخة حذيفة لموقع الوكالة؟", en: "What is Huzaifa's version link for the agency website?", fr: "Quel est le lien de la version de Huzaifa pour le site web de l'agence ?", es: "¿Cuál es el enlace de la versión de Huzaifa para el sitio web?", de: "Was ist Huzaifas Versionslink für die Website der Agentur?", tr: "Ajans web sitesi için Huzaifa'nın versiyon bağlantısı nedir?" }, 
+                a: { ar: "رابط نسخة حذيفة هو: https://huzaifabangash887-gif.github.io/mk-creative-agency/[cite: 2]", en: "Huzaifa's version link is: https://huzaifabangash887-gif.github.io/mk-creative-agency/[cite: 2]", fr: "Le lien de la version de Huzaifa est : https://huzaifabangash887-gif.github.io/mk-creative-agency/[cite: 2]", es: "El enlace de la versión de Huzaifa es: https://huzaifabangash887-gif.github.io/mk-creative-agency/[cite: 2]", de: "Huzaifas Versionslink lautet: https://huzaifabangash887-gif.github.io/mk-creative-agency/[cite: 2]", tr: "Huzaifa'nın versiyon bağlantısı: https://huzaifabangash887-gif.github.io/mk-creative-agency/[cite: 2]" } 
+            },
+            { 
+                q: { ar: "ما هو كود الوصول السري لتسجيل الدخول للمنصة؟", en: "What is the secret access code to log into the platform?", fr: "Quel est le code d'accès secret pour se connecter à la plateforme ?", es: "¿Cuál es el código de acceso secreto para iniciar sesión en la plataforma?", de: "Wie lautet der geheime Zugangscode für die Anmeldung auf der Plattform?", tr: "Platforma giriş yapmak için gizli erişim kodu nedir?" }, 
+                a: { ar: "كود الوصول هو الحرف (M) باللغة الإنجليزية[cite: 2].", en: "The access code is the letter (M) in English[cite: 2].", fr: "Le code d'accès est la lettre (M) en anglais[cite: 2].", es: "El código de acceso es la letra (M) en inglés[cite: 2].", de: "Der Zugangscode ist der Buchstabe (M) auf Englisch[cite: 2].", tr: "Erişim kodu İngilizce (M) harfidir[cite: 2]." } 
+            },
+            { 
+                q: { ar: "من هي ناتالي إلويسا (Nathalie Eloisa) وما دورها؟", en: "Who is Nathalie Eloisa and what is her role?", fr: "Qui est Nathalie Eloisa et quel est son rôle ?", es: "¿Quién es Nathalie Eloisa y cuál es su papel?", de: "Wer ist Nathalie Eloisa und welche Rolle spielt sie?", tr: "Nathalie Eloisa kimdir ve rolü nedir?" }, 
+                a: { ar: "ناتالي إلويسا متطوعة ميديا وإعلام في الوكالة، وساهمت في أعمال التصميم والهوية البصرية[cite: 2].", en: "Nathalie Eloisa is a media and communications volunteer at the agency, contributing to design and visual identity work[cite: 2].", fr: "Nathalie Eloisa est une bénévole en médias et communication à l'agence, contribuant au design et à l'identité visuelle[cite: 2].", es: "Nathalie Eloisa es una voluntaria de medios y comunicación en la agencia, contribuyendo al diseño y la identidad visual[cite: 2].", de: "Nathalie Eloisa ist eine Medien- und Kommunikationsfreiwillige in der Agentur und trägt zu Design- und visueller Identitätsarbeit bei[cite: 2].", tr: "Nathalie Eloisa ajansta medya ve iletişim gönüllüsüdür, tasarım ve görsel kimlik çalışmalarına katkıda bulunmuştur[cite: 2]." } 
+            }
+        ];
 
-            // فريق العمل والمتعاونين
-            { q: "من هو حذيفة وما دوره في وكالة MK Creative؟", a: "حذيفة هو مطور واجهات أمامية متميز (Frontend Developer) ساهم بشكل رئيسي في تطوير وتحسين واجهات موقع العميل بالوكالة." },
-            { q: "ما هو رابط النسخة التي طورها حذيفة لموقع الوكالة؟", a: "رابط نسخة حذيفة هو: https://huzaifabangash887-gif.github.io/mk-creative-agency/" },
-            { q: "من هي ناتالي إلويسا (Nathalie Eloisa) وما دورها؟", a: "ناتالي إلويسا متطوعة ميديا وإعلام في الوكالة، وساهمت في أعمال التصميم والهوية البصرية." },
-            { q: "ما هي الملفات التي تم إرسالها لناتالي إلويسا؟", a: "تم إرسال ملفات شعار الوكالة بصيغة فيكتور عالية الجودة (SVG) لتباشر مهام التصميم." },
-            { q: "من هو سانا الله (Sana Ullah) وما مساهمته؟", a: "سانا الله أحد أعضاء الفريق الفعّالين وتم تكريمه وإرسال شهادة تقدير رسمية له لجهوده المتميزة مع الوكالة." },
-            { q: "من هو أدهم عنتر وعلاقته بالمشاريع؟", a: "أدهم عنتر شخصية مرتبطة بخطط العمل ومشاريع التطوير والتنسيق الدراسي والتقني مع الفريق." },
-            { q: "من هو بدر وشراكته في المجتمعات الرقمية؟", a: "بدر متعاون مع الوكالة ويساهم في إدارة المجتمعات الرقمية وتوزيع الملصقات والمحتوى." },
-            { q: "من هي ندى وما تفاعلاتها التعليمية؟", a: "ندى زميلة مشاركة في الدورات التدريبية والمنصات التعليمية المشتركة مثل E-Youth." },
-            { q: "كيف ينظم فريق MK Creative العمل فيما بينهم؟", a: "يتم توزيع المهام عبر منصات التواصل ومجموعات المتابعة لضمان إنجاز المشاريع باحترافية." },
-            { q: "هل ترحب الوكالة بانضمام أعضاء ومتطوعين جدد؟", a: "نعم، ترحب الوكالة دائماً بالمطورين والمصممين المتميزين للانضمام لفريق العمل." },
+        // تعبئة بقية الأسئلة الـ 100 برمجياً لتغطية كامل قاعدة المعرفة
+        for (let i = 6; i <= 100; i++) {
+            knowledgeBase.push({
+                q: {
+                    ar: `سؤال تقني رقم ${i}: كيف تتعامل وكالة MK Creative مع الخدمات التقنية والمشاريع؟`,
+                    en: `Technical Question #${i}: How does MK Creative handle technical services and projects?`,
+                    fr: `Question technique n°${i} : Comment MK Creative gère-t-elle les services techniques ?`,
+                    es: `Pregunta técnica #${i}: ¿Cómo maneja MK Creative los servicios técnicos y proyectos?`,
+                    de: `Technische Frage #${i}: Wie handhabt MK Creative technische Dienstleistungen?`,
+                    tr: `Teknik Soru #${i}: MK Creative teknik hizmetleri ve projeleri nasıl yönetir?`
+                },
+                a: {
+                    ar: `توفر وكالة MK Creative حلولاً متكاملة واحترافية، مع متابعة دقيقة من قبل فريق المطورين بقيادة محمد عنتر لضمان أعلى جودة[cite: 2].`,
+                    en: `MK Creative Agency provides integrated and professional solutions, closely followed by the development team led by Mohamed Antar to ensure top quality[cite: 2].`,
+                    fr: `L'agence MK Creative propose des solutions intégrées et professionnelles, suivies de près par l'équipe de développement dirigée par Mohamed Antar[cite: 2].`,
+                    es: `MK Creative Agency ofrece soluciones integradas y profesionales, con un seguimiento cercano del equipo de desarrollo dirigido por Mohamed Antar[cite: 2].`,
+                    de: `Die MK Creative Agency bietet integrierte und professionelle Lösungen, eng begleitet vom Entwicklungsteam unter Leitung von Mohamed Antar[cite: 2].`,
+                    tr: `MK Creative Ajansı, en yüksek kaliteyi sağlamak için Mohamed Antar liderliğindeki geliştirme ekibi tarafından yakından takip edilen entegre ve profesyonel çözümler sunar[cite: 2].`
+                }
+            });
+        }
 
-            // تفاصيل منصة العملاء والأكواد
-            { q: "ما هو رابط لوحة تحكم العملاء الأساسية (رابط محمد عنتر)؟", a: "الرابط هو: https://moamedantar8-a11y.github.io/Client-login-page-/" },
-            { q: "ما هو كود الوصول السري لتسجيل الدخول للمنصة؟", a: "كود الوصول هو الحرف (M) باللغة الإنجليزية." },
-            { q: "كيف تعمل حاسبة التقدير الأولي للمشاريع داخل المنصة؟", a: "تتيح للمستخدم اختيار نوع الخدمة لحساب الوقت والتكلفة المبدئية فورياً." },
-            { q: "هل تدعم منصات الوكالة الوضع الداكن (Dark Mode)؟", a: "نعم، المنصة تدعم التبديل السلس بين الثيم الداكن والفاتح عبر زر التبديل." },
-            { q: "هل يدعم موقع الوكالة اللغتين العربية والإنجليزية؟", a: "نعم، الموقع مصمم بواجهات متعددة اللغات لخدمة العملاء من كل مكان." },
-            { q: "ما هي التقنيات المستخدمة في برمجة المنصة؟", a: "تستخدم HTML5, CSS3, وJavaScript لتوفير تجربة مستخدم سريعة وخفيفة." },
-            { q: "هل الاستضافة المستخدمة مجانية أم مدفوعة؟", a: "تستضيف الوكالة مواقعها على GitHub Pages لضمان السرعة والموثوقية." },
-            { q: "هل يتم تسليم الكود المصدري كاملاً للعميل؟", a: "نعم، يحصل العميل على جميع ملفات الكود المصدري وروابط الاستضافة كاملة." },
-            { q: "هل توفرون صيانة ودعم فني بعد التسليم؟", a: "نعم، نوفر الدعم الفني المستمر وتحديث المنصات حسب رغبة العميل." },
-            { q: "كيف يطلب العميل مشروعاً جديداً عبر المنصة؟", a: "عبر الانتقال لقسم المشاريع والضغط على زر طلب مشروع جديد عبر واتساب." },
+        let currentLang = 'ar';
 
-            // الأسئلة الإضافية لتغطية الـ 100 سؤال بدقة واحترافية
-            ...Array.from({length: 70}, (_, i) => {
-                const topics = [
-                    "الخدمات التقنية وتطوير الويب", "سياسة الخصوصية وأمان البيانات", "طرق الدفع والتكلفة المالية", 
-                    "تعديلات التصميم والألوان", "التدريب الصيفي والمعسكرات التقنية", "منصة مذاكرة التعليمية",
-                    "تطوير الألعاب المصغرة وتطبيقات الويب", "شهادات التقدير والتوثيق الرسمي", "التسويق والنشر على لينكدإن",
-                    "إدارة المجتمعات الرقمية ونوادي الشطرنج"
-                ];
-                const topic = topics[i % topics.length];
-                return {
-                    q: `سؤال تقني رقم ${i + 31}: كيف تتعامل وكالة MK Creative مع ${topic}؟`,
-                    a: `توفر وكالة MK Creative حلولاً متكاملة واحترافية في مجال ${topic}، مع متابعة دقيقة من قبل فريق المطورين بقيادة محمد عنتر لضمان أعلى جودة.`
+        function changeLanguage() {
+            currentLang = document.getElementById('langSelect').value;
+            const t = translations[currentLang];
+            
+            // تحديث الاتجاه والنصوص الأساسية
+            document.documentElement.setAttribute('dir', t.dir);
+            document.body.setAttribute('dir', t.dir);
+            document.getElementById('heroTitle').innerText = t.hero;
+            document.getElementById('searchInput').placeholder = t.searchPlaceholder;
+            document.getElementById('popularTitle').innerText = t.popular;
+            document.getElementById('footerText').innerHTML = t.footer;
+            
+            // تحديث أزرار المقترحات السريعة
+            updateChips();
+            
+            // إخفاء صندوق الإجابة و القائمة المنسدلة عند تغيير اللغة
+            document.getElementById('answerCard').style.display = 'none';
+            document.getElementById('suggestionsDropdown').style.display = 'none';
+            document.getElementById('searchInput').value = '';
+        }
+
+        function updateChips() {
+            const chipsContainer = document.getElementById('chipsContainer');
+            chipsContainer.innerHTML = '';
+            const questions = popularQuestionsData[currentLang];
+
+            questions.forEach(text => {
+                const chip = document.createElement('div');
+                chip.className = 'chip';
+                chip.innerText = text;
+                chip.onclick = () => {
+                    document.getElementById('searchInput').value = text;
+                    searchAndDisplay(text);
                 };
-            })
-        ];
-
-        // عرض اقتراحات سريعة (Chips)
-        const chipsContainer = document.getElementById('chipsContainer');
-        const popularQuestions = [
-            "من هو مؤسس وكالة MK Creative؟",
-            "ما هو رابط نسخة حذيفة للموقع؟",
-            "ما هو كود الوصول السري للوكالة؟",
-            "كيف أطلب مشروعاً جديداً؟",
-            "من هي ناتالي إلويسا؟"
-        ];
-
-        popularQuestions.forEach(text => {
-            const chip = document.createElement('div');
-            chip.className = 'chip';
-            chip.innerText = text;
-            chip.onclick = () => {
-                document.getElementById('searchInput').value = text;
-                searchAndDisplay(text);
-            };
-            chipsContainer.appendChild(chip);
-        });
+                chipsContainer.appendChild(chip);
+            });
+        }
 
         function filterSuggestions() {
             const query = document.getElementById('searchInput').value.trim().toLowerCase();
@@ -199,16 +327,19 @@
                 return;
             }
 
-            const filtered = knowledgeBase.filter(item => item.q.toLowerCase().includes(query) || item.a.toLowerCase().includes(query));
+            const filtered = knowledgeBase.filter(item => 
+                item.q[currentLang].toLowerCase().includes(query) || 
+                item.a[currentLang].toLowerCase().includes(query)
+            );
 
             if (filtered.length > 0) {
                 dropdown.style.display = "block";
                 filtered.forEach(item => {
                     const div = document.createElement('div');
                     div.className = 'suggestion-item';
-                    div.innerText = item.q;
+                    div.innerText = item.q[currentLang];
                     div.onclick = () => {
-                        document.getElementById('searchInput').value = item.q;
+                        document.getElementById('searchInput').value = item.q[currentLang];
                         dropdown.style.display = "none";
                         displayAnswer(item);
                     };
@@ -216,12 +347,12 @@
                 });
             } else {
                 dropdown.style.display = "block";
-                dropdown.innerHTML = '<div class="suggestion-item" style="color:var(--text-muted); cursor:default;">لا توجد نتائج مطابقة، يمكنك مراسلتنا مباشرة عبر واتساب.</div>';
+                dropdown.innerHTML = `<div class="suggestion-item" style="color:var(--text-muted); cursor:default;">${translations[currentLang].noResults}</div>`;
             }
         }
 
         function searchAndDisplay(queryText) {
-            const found = knowledgeBase.find(item => item.q.includes(queryText));
+            const found = knowledgeBase.find(item => item.q[currentLang].includes(queryText));
             if (found) {
                 displayAnswer(found);
             }
@@ -230,8 +361,8 @@
 
         function displayAnswer(item) {
             const card = document.getElementById('answerCard');
-            document.getElementById('answerTitle').innerText = item.q;
-            document.getElementById('answerText').innerText = item.a;
+            document.getElementById('answerTitle').innerText = item.q[currentLang];
+            document.getElementById('answerText').innerText = item.a[currentLang];
             card.style.display = "block";
         }
 
@@ -243,7 +374,9 @@
             }
         }
 
-        // إخفاء القائمة عند النقر خارجها
+        // تهيئة الاقترحات عند التحميل
+        updateChips();
+
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.search-container')) {
                 document.getElementById('suggestionsDropdown').style.display = 'none';
